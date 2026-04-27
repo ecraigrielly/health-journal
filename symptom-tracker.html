@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Health Journal">
+<meta name="theme-color" content="#7b3f7c">
+<title>Women's Health Journal</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --plum: #7b3f7c;
+    --rose: #c2687c;
+    --plum-light: #f5eef8;
+    --rose-light: #fce8e8;
+    --warn: #e65100;
+    --warn-light: #fff3e0;
+    --warn-border: #ffb74d;
+    --green: #388e3c;
+    --green-light: #e8f5e9;
+    --text: #2d1b2e;
+    --muted: #888;
+    --border: #e0d0e8;
+    --bg: #fdf6f0;
+    --card: #ffffff;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 20px);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--text); overscroll-behavior: none; }
+  
+  #app { display: flex; flex-direction: column; height: 100vh; max-width: 560px; margin: 0 auto; }
+
+  /* HEADER */
+  .header {
+    background: linear-gradient(135deg, var(--plum) 0%, var(--rose) 100%);
+    color: white;
+    padding: calc(var(--safe-top) + 18px) 20px 16px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .header-eyebrow { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; opacity: 0.8; margin-bottom: 3px; }
+  .header-title { font-family: 'Cormorant Garamond', serif; font-size: 24px; font-weight: 600; letter-spacing: 0.5px; }
+  .header-sub { font-size: 11px; opacity: 0.75; margin-top: 2px; }
+  .header-pills { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin-top: 10px; }
+  .header-pill { background: rgba(255,255,255,0.22); border-radius: 20px; padding: 3px 11px; font-size: 11px; }
+
+  /* NAV */
+  .nav { display: flex; background: white; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .nav-btn { flex: 1; padding: 12px 4px; border: none; background: none; cursor: pointer; font-size: 11px; font-family: inherit; color: var(--muted); border-bottom: 3px solid transparent; transition: all 0.2s; }
+  .nav-btn.active { color: var(--plum); border-bottom-color: var(--plum); font-weight: 600; }
+
+  /* SCROLL AREA */
+  .scroll { flex: 1; overflow-y: auto; padding: 16px 14px calc(var(--safe-bottom) + 20px); -webkit-overflow-scrolling: touch; }
+
+  /* CARDS */
+  .card { background: var(--card); border-radius: 14px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 10px rgba(123,63,124,0.08); border: 1px solid transparent; }
+  .card.warn-card { background: var(--warn-light); border-color: var(--warn-border); }
+  .card.headache-active { background: #fff5f5; border-color: #e57373; }
+
+  /* SECTION LABEL */
+  .sec-lbl { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--plum); margin-bottom: 10px; padding-bottom: 4px; border-bottom: 1px solid #e8d5f0; font-weight: 600; }
+
+  /* DATE NAV */
+  .date-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .date-nav-btn { width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--border); background: white; font-size: 20px; cursor: pointer; color: var(--plum); display: flex; align-items: center; justify-content: center; }
+  .date-nav-btn:disabled { opacity: 0.3; }
+  .date-label { text-align: center; }
+  .date-main { font-size: 16px; font-weight: 600; color: var(--plum); }
+  .date-today { font-size: 10px; color: var(--rose); letter-spacing: 1px; text-transform: uppercase; margin-top: 1px; }
+
+  /* MED PANEL */
+  .med-row { display: flex; align-items: center; justify-content: space-between; border-radius: 12px; padding: 11px 13px; margin-bottom: 8px; transition: all 0.2s; }
+  .med-row:last-child { margin-bottom: 0; }
+  .med-name { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+  .med-status { font-size: 11px; }
+  .med-btn { padding: 8px 15px; border-radius: 20px; border: none; cursor: pointer; font-size: 12px; font-weight: 600; color: white; transition: all 0.2s; font-family: inherit; }
+  .med-btn:active { transform: scale(0.95); }
+  .all-taken { margin-top: 10px; text-align: center; font-size: 12px; color: var(--green); font-weight: 600; }
+
+  /* SEVERITY BUTTONS */
+  .sev-row { display: flex; gap: 6px; }
+  .sev-btn { flex: 1; padding: 9px 2px; border: none; border-radius: 8px; cursor: pointer; font-size: 11px; font-family: inherit; transition: all 0.15s; background: #f5f0f8; color: #999; }
+  .sev-btn:active { transform: scale(0.97); }
+
+  /* SYMPTOM CARD */
+  .sym-card { background: white; border-radius: 12px; padding: 12px 13px; margin-bottom: 8px; box-shadow: 0 1px 6px rgba(123,63,124,0.07); border: 1px solid transparent; }
+  .sym-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .sym-name { font-size: 13px; }
+  .sym-badge { font-size: 10px; padding: 2px 8px; border-radius: 20px; }
+
+  /* CHIPS */
+  .chips { display: flex; flex-wrap: wrap; gap: 7px; }
+  .chip { padding: 7px 12px; border-radius: 20px; border: none; font-size: 12px; cursor: pointer; font-family: inherit; transition: all 0.15s; background: #f0eaf5; color: #888; }
+  .chip:active { transform: scale(0.97); }
+  .chip.active { background: var(--plum); color: white; font-weight: 600; }
+  .chip.active-warn { background: #c62828; color: white; font-weight: 600; }
+  .chip.outline-warn { border: 1px dashed var(--warn-border) !important; background: var(--warn-light) !important; color: var(--warn) !important; }
+  .chip.outline-med { border: 1px dashed var(--warn-border) !important; background: var(--warn-light) !important; color: var(--warn) !important; }
+
+  /* INPUTS */
+  input[type=time], input[type=text], textarea {
+    width: 100%; padding: 10px 12px; border-radius: 10px;
+    border: 1px solid var(--border); font-family: inherit; font-size: 14px;
+    background: white; color: var(--text); outline: none;
+    -webkit-appearance: none;
+  }
+  textarea { resize: vertical; min-height: 80px; }
+  label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 5px; }
+
+  /* BUTTONS */
+  .btn-primary { width: 100%; padding: 15px; border-radius: 12px; border: none; background: linear-gradient(135deg, var(--plum), var(--rose)); color: white; font-size: 15px; font-family: inherit; cursor: pointer; transition: all 0.3s; font-weight: 600; }
+  .btn-primary.saved { background: var(--green); }
+  .btn-primary:active { transform: scale(0.99); }
+  .btn-secondary { width: 100%; padding: 13px; border-radius: 12px; border: 1px solid var(--border); background: white; color: var(--plum); font-size: 14px; font-family: inherit; cursor: pointer; margin-bottom: 10px; font-weight: 500; }
+  .btn-download { width: 100%; padding: 13px; border-radius: 12px; border: none; background: linear-gradient(135deg, var(--plum), var(--rose)); color: white; font-size: 14px; font-family: inherit; cursor: pointer; font-weight: 600; }
+
+  /* SUMMARY */
+  .summary-text { white-space: pre-wrap; font-size: 13px; line-height: 1.8; color: var(--text); }
+  .summary-placeholder { text-align: center; padding: 40px 20px; }
+  .summary-placeholder .icon { font-size: 52px; margin-bottom: 16px; }
+  .summary-placeholder h3 { font-family: 'Cormorant Garamond', serif; font-size: 22px; color: var(--plum); margin-bottom: 8px; }
+  .summary-placeholder p { font-size: 13px; color: var(--muted); line-height: 1.6; margin-bottom: 24px; }
+  .btn-generate { padding: 14px 32px; border-radius: 12px; border: none; background: linear-gradient(135deg, var(--plum), var(--rose)); color: white; font-size: 15px; font-family: inherit; font-weight: 600; cursor: pointer; }
+
+  /* HISTORY */
+  .history-day { background: white; border-radius: 14px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 10px rgba(123,63,124,0.07); border: 1px solid transparent; }
+  .history-day.post-con { border-color: var(--warn-border); }
+  .history-day-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .history-date { font-size: 14px; font-weight: 600; color: var(--plum); }
+  .med-dots { display: flex; gap: 4px; }
+  .med-dot { font-size: 10px; padding: 2px 7px; border-radius: 10px; }
+  .headache-block { border-radius: 10px; padding: 10px 13px; margin-bottom: 8px; font-size: 11px; }
+  .headache-block .hb-title { font-size: 12px; font-weight: 600; margin-bottom: 4px; }
+  .sym-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid #f5f0f8; font-size: 12px; }
+  .day-note { margin-top: 8px; font-size: 12px; color: #777; font-style: italic; }
+
+  /* ADHERENCE BAR */
+  .adh-bar-bg { background: #f0eaf5; border-radius: 8px; height: 9px; overflow: hidden; margin: 4px 0 2px; }
+  .adh-bar-fill { height: 100%; border-radius: 8px; transition: width 0.5s; }
+
+  /* LOADING */
+  .loading { text-align: center; padding: 50px 20px; }
+  .spinner { font-size: 36px; display: inline-block; animation: spin 1.2s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* HEADACHE QUICK LINK */
+  .h-quick { display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+
+  /* POST-CONCUSSION NOTE */
+  .pc-note { margin-top: 10px; padding: 8px 12px; background: #ffebee; border-radius: 8px; font-size: 11px; color: #c62828; }
+
+  .field-group { margin-bottom: 13px; }
+  .field-group:last-child { margin-bottom: 0; }
+
+  .resolve-chips { display: flex; flex-wrap: wrap; gap: 7px; }
+
+  .notice { background: var(--warn-light); border: 1px solid var(--warn-border); border-radius: 12px; padding: 11px 14px; margin-bottom: 12px; font-size: 12px; color: var(--warn); line-height: 1.5; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="header" id="header">
+    <div class="header-eyebrow">Women's Health</div>
+    <div class="header-title">Symptom Journal</div>
+    <div class="header-sub">Track · Understand · Share with your doctor</div>
+    <div class="header-pills" id="header-pills"></div>
+  </div>
+
+  <nav class="nav">
+    <button class="nav-btn active" data-view="log"      onclick="switchView('log')">📝 Symptoms</button>
+    <button class="nav-btn"        data-view="headache" onclick="switchView('headache')">🤕 Headache</button>
+    <button class="nav-btn"        data-view="history"  onclick="switchView('history')">📅 History</button>
+    <button class="nav-btn"        data-view="summary"  onclick="switchView('summary')">📋 Summary</button>
+  </nav>
+
+  <div class="scroll" id="main"></div>
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────
+const MEDS = [
+  { id:"hrt",     label:"HRT",             icon:"🌸", color:"#7b3f7c", light:"#f5eef8", taken_border:"#ce93d8" },
+  { id:"antidep", label:"Antidepressant",  icon:"☀️", color:"#1565c0", light:"#e3f2fd", taken_border:"#90caf9" },
+  { id:"adhd",    label:"ADHD Medication", icon:"⚡", color:"#2e7d32", light:"#e8f5e9", taken_border:"#a5d6a7" },
+];
+const SYMPTOMS = [
+  { id:"exhaustion",    label:"Exhaustion / Fatigue",      icon:"😴", cat:"energy" },
+  { id:"sleep",         label:"Poor Sleep",                 icon:"🌙", cat:"energy" },
+  { id:"bloating",      label:"Bloating",                   icon:"🫃", cat:"gut" },
+  { id:"cramping",      label:"Abdominal Cramping",         icon:"⚡", cat:"gut" },
+  { id:"diarrhea",      label:"Diarrhea / Loose Stool",    icon:"🚽", cat:"gut" },
+  { id:"constipation",  label:"Constipation",               icon:"🧱", cat:"gut" },
+  { id:"hotflash",      label:"Hot Flash / Night Sweat",   icon:"🔥", cat:"menopause" },
+  { id:"mood",          label:"Mood Swings / Irritability", icon:"🌊", cat:"menopause" },
+  { id:"brainfog",      label:"Brain Fog",                  icon:"🌫️", cat:"menopause" },
+  { id:"jointpain",     label:"Joint / Muscle Pain",        icon:"🦴", cat:"pain" },
+  { id:"anxiety",       label:"Anxiety",                    icon:"💭", cat:"mental" },
+  { id:"focus",         label:"Poor Focus / Concentration", icon:"🎯", cat:"mental" },
+];
+const CATS = [
+  { id:"energy",    label:"Energy & Sleep" },
+  { id:"pain",      label:"Pain" },
+  { id:"gut",       label:"Gut / IBS" },
+  { id:"menopause", label:"Menopause Symptoms" },
+  { id:"mental",    label:"Mental & Emotional" },
+];
+const H_LOCS     = ["Forehead","Temples","Back of head","One side only","Top of head","Behind eyes","Whole head"];
+const H_TYPES    = ["Throbbing","Pressure / tight band","Stabbing","Dull ache","Burning","Post-concussion (familiar feeling)"];
+const H_TRIGGERS = ["Missed HRT dose","Missed antidepressant","Missed ADHD med","Stress","Hormones","Poor sleep","Dehydration","Bright light","Strong smells","Food / caffeine","Screen time","Weather change","Neck tension","Physical activity","Unknown"];
+const SEV_LABELS = ["None","Mild","Moderate","Severe"];
+const SEV_COLORS = ["#e8f5e9","#fff9c4","#ffe0b2","#ffcdd2"];
+const SEV_TEXT   = ["#388e3c","#f9a825","#e65100","#c62828"];
+
+// ── STATE ─────────────────────────────────────────────────────────────────
+let state = {
+  view: "log",
+  date: todayStr(),
+  entries:   JSON.parse(localStorage.getItem("hj-entries")   || "{}"),
+  headaches: JSON.parse(localStorage.getItem("hj-headaches") || "{}"),
+  medsLog:   JSON.parse(localStorage.getItem("hj-meds")      || "{}"),
+  notes:     JSON.parse(localStorage.getItem("hj-notes")     || "{}"),
+  summary: null,
+  genning: false,
+};
+
+function save() {
+  localStorage.setItem("hj-entries",   JSON.stringify(state.entries));
+  localStorage.setItem("hj-headaches", JSON.stringify(state.headaches));
+  localStorage.setItem("hj-meds",      JSON.stringify(state.medsLog));
+  localStorage.setItem("hj-notes",     JSON.stringify(state.notes));
+}
+
+function todayStr() { return new Date().toISOString().split("T")[0]; }
+function fmtDate(ds) {
+  return new Date(ds+"T00:00:00").toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"});
+}
+function calcStreak(medId) {
+  let n=0; const d=new Date(todayStr()+"T00:00:00");
+  while(true){const k=d.toISOString().split("T")[0];if(state.medsLog[k]?.[medId]){n++;d.setDate(d.getDate()-1);}else break;}
+  return n;
+}
+
+// ── GETTERS ───────────────────────────────────────────────────────────────
+function dayEntry()    { return state.entries[state.date]   || {}; }
+function dayH()        { return state.headaches[state.date] || {severity:0,locations:[],types:[],triggers:[],startTime:"",medication:"",relieved:""}; }
+function dayMeds()     { return state.medsLog[state.date]   || {}; }
+function dayNotes()    { return state.notes[state.date]     || ""; }
+function hasH()        { return (dayH().severity||0) > 0; }
+function allDates()    { return [...new Set([...Object.keys(state.entries),...Object.keys(state.headaches),...Object.keys(state.medsLog)])].sort((a,b)=>b.localeCompare(a)); }
+
+// ── MUTATIONS ─────────────────────────────────────────────────────────────
+function toggleMed(id) {
+  if (!state.medsLog[state.date]) state.medsLog[state.date] = {};
+  state.medsLog[state.date][id] = !state.medsLog[state.date][id];
+  save(); render();
+}
+function setSev(id, lv) {
+  if (!state.entries[state.date]) state.entries[state.date] = {};
+  state.entries[state.date][id] = lv;
+  save(); render();
+}
+function setHSev(lv) {
+  const h = dayH();
+  if (!state.headaches[state.date]) state.headaches[state.date] = {...h};
+  state.headaches[state.date].severity = lv;
+  save(); render();
+}
+function toggleChip(field, val) {
+  if (!state.headaches[state.date]) state.headaches[state.date] = dayH();
+  const cur = state.headaches[state.date][field] || [];
+  state.headaches[state.date][field] = cur.includes(val) ? cur.filter(v=>v!==val) : [...cur,val];
+  save(); render();
+}
+function setHField(field, val) {
+  if (!state.headaches[state.date]) state.headaches[state.date] = dayH();
+  state.headaches[state.date][field] = val;
+  save();
+}
+function setNote(val) {
+  state.notes[state.date] = val;
+  save();
+}
+function saveFlash(btnId) {
+  save();
+  const btn = document.getElementById(btnId);
+  if (btn) { btn.textContent = "✓ Saved!"; btn.classList.add("saved"); setTimeout(()=>{ btn.textContent="Save Entry"; btn.classList.remove("saved"); },2000); }
+}
+function navigate(dir) {
+  const d = new Date(state.date+"T00:00:00");
+  d.setDate(d.getDate()+dir);
+  const next = d.toISOString().split("T")[0];
+  if (next <= todayStr()) { state.date = next; render(); }
+}
+function switchView(v) {
+  state.view = v;
+  document.querySelectorAll(".nav-btn").forEach(b=>b.classList.toggle("active", b.dataset.view===v));
+  render();
+}
+
+// ── RENDER HELPERS ────────────────────────────────────────────────────────
+function dateNavHTML() {
+  const isToday = state.date === todayStr();
+  return `<div class="date-nav">
+    <button class="date-nav-btn" onclick="navigate(-1)">‹</button>
+    <div class="date-label">
+      <div class="date-main">${fmtDate(state.date)}</div>
+      ${isToday?'<div class="date-today">Today</div>':""}
+    </div>
+    <button class="date-nav-btn" onclick="navigate(1)" ${isToday?"disabled":""}>›</button>
+  </div>`;
+}
+
+function medPanelHTML() {
+  const dm = dayMeds();
+  const allTaken = MEDS.every(m=>dm[m.id]);
+  const rows = MEDS.map(m=>{
+    const taken = dm[m.id]||false;
+    const streak = calcStreak(m.id);
+    return `<div class="med-row" style="background:${taken?m.light:"#fffaf4"};border:1.5px solid ${taken?m.taken_border:"#ffcc80"}">
+      <div>
+        <div class="med-name">${m.icon} ${m.label}${taken&&streak>1?`<span style="font-size:11px;color:#aaa;font-weight:400;margin-left:8px">🔥 ${streak}-day streak</span>`:""}</div>
+        <div class="med-status" style="color:${taken?"#666":"var(--warn)"}">${taken?"Taken today ✓":state.date===todayStr()?"⚠️ Not logged yet":"Not logged"}</div>
+      </div>
+      <button class="med-btn" style="background:${taken?m.color:"var(--warn)"}" onclick="toggleMed('${m.id}')">${taken?"✓ Taken":"Mark Taken"}</button>
+    </div>`;
+  }).join("");
+  return `<div class="card"><div class="sec-lbl">Daily Medications</div>${rows}${allTaken?'<div class="all-taken">🎉 All medications taken today!</div>':""}</div>`;
+}
+
+function sevBtnsHTML(currentVal, onclickFn) {
+  return `<div class="sev-row">${[0,1,2,3].map(lv=>{
+    const active = currentVal===lv;
+    const bg = active?(lv===0?"#e8f5e9":SEV_COLORS[lv]):"#f5f0f8";
+    const col = active?(lv===0?"#388e3c":SEV_TEXT[lv]):"#999";
+    const fw = active?"600":"400";
+    return `<button class="sev-btn" style="background:${bg};color:${col};font-weight:${fw}" onclick="${onclickFn}(${lv})">${SEV_LABELS[lv]}</button>`;
+  }).join("")}</div>`;
+}
+
+function chipsHTML(items, selected, toggleFn, opts={}) {
+  return `<div class="chips">${items.map(item=>{
+    const active = selected.includes(item);
+    const isPC   = item==="Post-concussion (familiar feeling)";
+    const isMed  = item.startsWith("Missed");
+    let cls = "chip";
+    if (active && isPC) cls += " active-warn";
+    else if (active) cls += " active";
+    else if (isPC || isMed) cls += " outline-warn";
+    const label = isPC ? "⚠️ "+item : (isMed ? "💊 "+item : item);
+    return `<button class="${cls}" onclick="${toggleFn}('${item.replace(/'/g,"\\'")}')">` + label + `</button>`;
+  }).join("")}</div>`;
+}
+
+// ── VIEWS ─────────────────────────────────────────────────────────────────
+function renderLog() {
+  const de = dayEntry();
+  const h  = dayH();
+  const hActive = hasH();
+  let html = dateNavHTML() + medPanelHTML();
+
+  // Headache quick link
+  html += `<div class="card ${hActive?"headache-active":""} h-quick" onclick="switchView('headache')">
+    <div>
+      <div style="font-size:14px">🤕 Headache</div>
+      <div style="font-size:12px;color:${hActive?"#c62828":"#bbb"};margin-top:3px">
+        ${hActive ? SEV_LABELS[h.severity]+(h.types?.includes("Post-concussion (familiar feeling)")?" · ⚠️ Post-concussion":"")+" · tap to edit" : "Tap to log headache →"}
+      </div>
+    </div>
+    <div style="font-size:20px">${hActive?"🔴":"➕"}</div>
+  </div>`;
+
+  CATS.forEach(cat=>{
+    const catS = SYMPTOMS.filter(s=>s.cat===cat.id);
+    html += `<div style="margin-bottom:16px"><div class="sec-lbl">${cat.label}</div>`;
+    catS.forEach(s=>{
+      const val = de[s.id]||0;
+      html += `<div class="sym-card" style="border-color:${val>0?SEV_COLORS[val]:"transparent"}">
+        <div class="sym-header">
+          <span class="sym-name">${s.icon} ${s.label}</span>
+          ${val>0?`<span class="sym-badge" style="background:${SEV_COLORS[val]};color:${SEV_TEXT[val]}">${SEV_LABELS[val]}</span>`:""}
+        </div>
+        ${sevBtnsHTML(val, `setSev_${s.id}`)}
+      </div>`;
+    });
+    html += "</div>";
+  });
+
+  html += `<div style="margin-bottom:16px"><div class="sec-lbl">Notes for this day</div>
+    <textarea id="day-notes" placeholder="Food, water, stress, exercise, how you're feeling…" onchange="setNote(this.value)">${dayNotes()}</textarea>
+  </div>`;
+  html += `<button class="btn-primary" id="save-btn" onclick="saveFlash('save-btn')">Save Entry</button>`;
+  return html;
+}
+
+function renderHeadache() {
+  const h = dayH();
+  let html = dateNavHTML() + medPanelHTML();
+
+  html += `<div class="notice">⚠️ <strong>Concussion history noted (2016).</strong> If this feels like your post-concussion headaches, select that type below.</div>`;
+
+  html += `<div class="card"><div class="sec-lbl">Headache Severity</div>
+    <div class="sev-row">${[0,1,2,3].map(lv=>{
+      const active = h.severity===lv;
+      const bg  = active?(lv===0?"#e8f5e9":SEV_COLORS[lv]):"#f5f0f8";
+      const col = active?(lv===0?"#388e3c":SEV_TEXT[lv]):"#999";
+      const label = lv===0?"None":["😐","😣","😫"][lv-1]+" "+SEV_LABELS[lv];
+      return `<button class="sev-btn" style="background:${bg};color:${col};font-weight:${active?"600":"400"};transform:${active?"scale(1.04)":"scale(1)"}" onclick="setHSev(${lv})">${label}</button>`;
+    }).join("")}</div>
+  </div>`;
+
+  if (hasH()) {
+    html += `<div class="card"><div class="sec-lbl">Where is the pain? <span style="color:#bbb;text-transform:none;letter-spacing:0">(all that apply)</span></div>
+      ${chipsHTML(H_LOCS, h.locations||[], "toggleLoc")}
+    </div>`;
+
+    html += `<div class="card"><div class="sec-lbl">What does it feel like?</div>
+      ${chipsHTML(H_TYPES, h.types||[], "toggleType")}
+      ${(h.types||[]).includes("Post-concussion (familiar feeling)")?'<div class="pc-note">This will be flagged in your doctor summary. Consider contacting your doctor if this is recurring.</div>':""}
+    </div>`;
+
+    html += `<div class="card"><div class="sec-lbl">Possible triggers?</div>
+      ${chipsHTML(H_TRIGGERS, h.triggers||[], "toggleTrigger")}
+    </div>`;
+
+    html += `<div class="card">
+      <div class="sec-lbl">More details</div>
+      <div class="field-group">
+        <label>Approx. start time</label>
+        <input type="time" value="${h.startTime||""}" onchange="setHField('startTime',this.value)">
+      </div>
+      <div class="field-group">
+        <label>Pain relief taken</label>
+        <input type="text" value="${h.medication||""}" placeholder="e.g. Ibuprofen 400mg, Tylenol, none" onchange="setHField('medication',this.value)">
+      </div>
+      <div class="field-group">
+        <label>Did it resolve?</label>
+        <div class="resolve-chips">
+          ${["Yes — fully","Partially","No","Still ongoing"].map(opt=>`<button class="chip ${h.relieved===opt?"active":""}" onclick="setResolve('${opt}')">${opt}</button>`).join("")}
+        </div>
+      </div>
+    </div>`;
+  } else {
+    html += `<div style="text-align:center;color:#ccc;padding:20px 0;font-size:14px">Select a severity above to log details</div>`;
+  }
+
+  html += `<button class="btn-primary" id="save-btn-h" onclick="saveFlash('save-btn-h')">Save Headache Entry</button>`;
+  return html;
+}
+
+function renderHistory() {
+  const dates = allDates();
+  let html = `<h2 style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--plum);margin-bottom:6px">History</h2>`;
+
+  // Med adherence
+  const loggedAny = Object.keys(state.medsLog).length > 0;
+  if (loggedAny) {
+    html += `<div class="card" style="margin-bottom:16px"><div class="sec-lbl">Medication Adherence</div>`;
+    MEDS.forEach(m=>{
+      const logged = dates.filter(d=>state.medsLog[d]?.[m.id]!==undefined).length;
+      const taken  = dates.filter(d=>state.medsLog[d]?.[m.id]===true).length;
+      const pct    = logged>0?Math.round(taken/logged*100):0;
+      const col    = pct>=80?"#388e3c":pct>=50?"#f9a825":"#c62828";
+      const streak = calcStreak(m.id);
+      html += `<div style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:12px">
+          <span>${m.icon} ${m.label}</span>
+          <strong style="color:${col}">${logged>0?pct+"%":"Not tracked"}</strong>
+        </div>
+        ${logged>0?`<div class="adh-bar-bg"><div class="adh-bar-fill" style="width:${pct}%;background:${col}"></div></div>
+        <div style="font-size:10px;color:#aaa">${taken}/${logged} days${streak>0?` · 🔥 ${streak}-day streak`:""}</div>`:""}
+      </div>`;
+    });
+    html += "</div>";
+  }
+
+  if (dates.length===0) {
+    html += `<div style="text-align:center;color:#aaa;padding:40px 0">No entries yet — start logging!</div>`;
+  }
+
+  dates.forEach(d=>{
+    const dy = state.entries[d]||{};
+    const ha = state.headaches[d];
+    const md = state.medsLog[d]||{};
+    const nt = state.notes[d];
+    const active = SYMPTOMS.filter(s=>(dy[s.id]||0)>0);
+    const isPC = ha?.types?.includes("Post-concussion (familiar feeling)");
+    if (active.length===0&&!ha?.severity&&!nt&&Object.keys(md).length===0) return;
+
+    html += `<div class="history-day ${isPC?"post-con":""}">
+      <div class="history-day-header">
+        <div class="history-date">${fmtDate(d)}</div>
+        <div class="med-dots">${MEDS.map(m=>`<span class="med-dot" style="background:${md[m.id]===true?m.light:md[m.id]===false?"#fff3e0":"#f5f5f5"};color:${md[m.id]===true?m.color:md[m.id]===false?"#e65100":"#bbb"}">${m.icon}${md[m.id]===true?"✓":md[m.id]===false?"✗":"—"}</span>`).join("")}</div>
+      </div>`;
+
+    if (ha?.severity>0) {
+      html += `<div class="headache-block" style="background:${isPC?"#fff3e0":"#fff5f5"};border:1px solid ${isPC?"#ffb74d":"#ffcdd2"}">
+        <div class="hb-title" style="color:${isPC?"#e65100":"#c62828"}">${isPC?"⚠️":"🤕"} Headache — ${SEV_LABELS[ha.severity]}${isPC?" · POST-CONCUSSION":""}${ha.startTime?" · "+ha.startTime:""}</div>
+        ${ha.locations?.length>0?`<div>📍 ${ha.locations.join(", ")}</div>`:""}
+        ${ha.types?.length>0?`<div>💢 ${ha.types.join(", ")}</div>`:""}
+        ${ha.triggers?.length>0?`<div>⚡ ${ha.triggers.join(", ")}</div>`:""}
+        ${ha.medication?`<div>💊 ${ha.medication}</div>`:""}
+        ${ha.relieved?`<div>✅ ${ha.relieved}</div>`:""}
+      </div>`;
+    }
+
+    active.forEach(s=>{
+      html += `<div class="sym-row"><span>${s.icon} ${s.label}</span><span class="sym-badge" style="background:${SEV_COLORS[dy[s.id]]};color:${SEV_TEXT[dy[s.id]]}">${SEV_LABELS[dy[s.id]]}</span></div>`;
+    });
+    if (nt) html += `<div class="day-note">📝 ${nt}</div>`;
+    html += "</div>";
+  });
+
+  return html;
+}
+
+function renderSummary() {
+  if (state.genning) {
+    return `<div class="loading"><div class="spinner">⏳</div><div style="font-size:15px;color:var(--plum);margin-top:16px">Analysing your data…</div><div style="font-size:12px;color:#aaa;margin-top:6px">Claude is reviewing your symptoms,<br>headaches, and medications</div></div>`;
+  }
+  if (!state.summary) {
+    const hasData = allDates().length > 0;
+    return `<div class="summary-placeholder">
+      <div class="icon">📋</div>
+      <h3>Create Your Doctor Summary</h3>
+      <p>Claude will analyse all your logged symptoms, headaches, and medication data and write a clear summary you can share at your next appointment.</p>
+      ${hasData
+        ? `<button class="btn-generate" onclick="generateSummary()">✨ Generate Summary</button>`
+        : `<p style="color:var(--warn);font-size:13px">Log some symptoms first, then come back to generate your summary.</p>`
+      }
+    </div>`;
+  }
+  return `<h2 style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--plum);margin-bottom:6px">Doctor Summary</h2>
+    <p style="font-size:12px;color:#aaa;margin-bottom:16px">AI-generated from your data. Review before sharing.</p>
+    <div class="card"><div class="summary-text">${state.summary.replace(/</g,"&lt;").replace(/>/g,"&gt;")}</div></div>
+    <div class="notice">⚠️ This summary is for informational purposes to help you communicate with your doctor. It is not medical advice.</div>
+    <button class="btn-secondary" onclick="generateSummary()">🔄 Regenerate</button>
+    <button class="btn-download" onclick="downloadSummary()">⬇️ Download Summary (.txt)</button>`;
+}
+
+// ── MAIN RENDER ───────────────────────────────────────────────────────────
+function render() {
+  // Header pills for missed meds (today only)
+  const pills = document.getElementById("header-pills");
+  if (state.date === todayStr()) {
+    const dm = dayMeds();
+    const missed = MEDS.filter(m=>!dm[m.id]);
+    pills.innerHTML = missed.map(m=>`<span class="header-pill">${m.icon} Take your ${m.label}</span>`).join("");
+  } else {
+    pills.innerHTML = "";
+  }
+
+  const main = document.getElementById("main");
+  const views = { log: renderLog, headache: renderHeadache, history: renderHistory, summary: renderSummary };
+  main.innerHTML = views[state.view]?.() || "";
+
+  // Re-attach event delegation for symptom severity buttons
+  SYMPTOMS.forEach(s=>{
+    window[`setSev_${s.id}`] = lv => setSev(s.id, lv);
+  });
+  window.toggleLoc     = v => toggleChip("locations", v);
+  window.toggleType    = v => toggleChip("types", v);
+  window.toggleTrigger = v => toggleChip("triggers", v);
+  window.setResolve    = v => { setHField("relieved", v); render(); };
+
+  // Restore textarea value (innerHTML doesn't fire change)
+  const ta = document.getElementById("day-notes");
+  if (ta) ta.value = dayNotes();
+}
+
+// ── SUMMARY GENERATION ────────────────────────────────────────────────────
+async function generateSummary() {
+  state.genning = true; state.summary = null;
+  switchView("summary");
+
+  const dates = allDates();
+  const headacheDays = dates.filter(d=>state.headaches[d]?.severity>0);
+  const pcDays = headacheDays.filter(d=>state.headaches[d]?.types?.includes("Post-concussion (familiar feeling)"));
+  const symTotals = {};
+  SYMPTOMS.forEach(s=>symTotals[s.id]=0);
+  dates.forEach(d=>SYMPTOMS.forEach(s=>{ symTotals[s.id]+=(state.entries[d]?.[s.id]||0); }));
+  const topSyms = SYMPTOMS.map(s=>({...s,total:symTotals[s.id]})).filter(s=>s.total>0).sort((a,b)=>b.total-a.total);
+
+  const medAdh = MEDS.map(m=>{
+    const logged = dates.filter(d=>state.medsLog[d]?.[m.id]!==undefined).length;
+    const taken  = dates.filter(d=>state.medsLog[d]?.[m.id]===true).length;
+    return { label:m.label, taken, logged, pct: logged>0?Math.round(taken/logged*100):null };
+  });
+
+  const dailyLog = dates.slice(0,30).map(d=>({
+    date: fmtDate(d),
+    symptoms: SYMPTOMS.filter(s=>(state.entries[d]?.[s.id]||0)>0).map(s=>`${s.label}: ${SEV_LABELS[state.entries[d][s.id]]}`),
+    headache: state.headaches[d]?.severity>0 ? state.headaches[d] : null,
+    meds: MEDS.map(m=>({ name:m.label, taken:state.medsLog[d]?.[m.id]??null })),
+    notes: state.notes[d]||"",
+  }));
+
+  const prompt = `You are a medical scribe helping a patient prepare a summary for their doctor.
+
+Patient profile:
+- Female, 51, menopausal, overweight
+- Medications: HRT, antidepressant, ADHD medication (frequently forgets doses)
+- History: concussion in 2016
+- Main concerns: exhaustion, headaches (some post-concussion type), IBS symptoms
+
+Data summary:
+- Days tracked: ${dates.length}
+- Headache days: ${headacheDays.length}
+- Post-concussion type headaches: ${pcDays.length}
+- Top symptoms: ${topSyms.slice(0,5).map(s=>`${s.label} (${s.total} pts)`).join(", ")||"none yet"}
+- Medication adherence: ${medAdh.map(m=>m.pct!==null?`${m.label}: ${m.pct}% (${m.taken}/${m.logged} days)`:`${m.label}: not yet tracked`).join(", ")}
+
+Daily log:
+${JSON.stringify(dailyLog,null,2)}
+
+Write a professional health summary a doctor would find useful. Use these sections:
+1. Patient Overview
+2. Primary Concerns
+3. Symptom Patterns
+4. Medication Adherence (note any correlations between missed doses and symptoms)
+5. Headache Analysis (flag post-concussion type prominently if present)
+6. Suggested Questions for Appointment (5-7 questions)
+
+Be specific, cite numbers from the data, use plain language. Flag concussion history prominently if post-concussion headaches were logged.`;
+
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:1500, messages:[{role:"user",content:prompt}] })
+    });
+    const data = await res.json();
+    state.summary = data.content?.find(b=>b.type==="text")?.text || "Could not generate summary. Please try again.";
+  } catch(e) {
+    state.summary = "Error connecting to Claude. Please check your internet connection and try again.";
+  }
+  state.genning = false;
+  render();
+}
+
+function downloadSummary() {
+  if (!state.summary) return;
+  const a = document.createElement("a");
+  const blob = new Blob([state.summary], {type:"text/plain"});
+  a.href = URL.createObjectURL(blob);
+  a.download = "health-summary-for-doctor.txt";
+  a.click();
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>
