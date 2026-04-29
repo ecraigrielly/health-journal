@@ -170,15 +170,29 @@ function calcStreak(medId){
 // entries:   { "2026-04-27": [ {time, symptoms:{id:severity,...}, note} ] }
 // headaches: { "2026-04-27": [ {time, severity, locations, types, triggers, medication, relieved} ] }
 // medsLog:   { "2026-04-27": { hrt:true, antidep:false, adhd:true } }
+function safeLoad(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    const parsed = JSON.parse(raw);
+    // Validate it's the right shape (object, not array or primitive)
+    if (typeof parsed !== "object" || Array.isArray(parsed) || parsed === null) return fallback;
+    return parsed;
+  } catch(e) {
+    console.warn("Failed to load", key, e);
+    return fallback;
+  }
+}
+// Clear any old-format keys from previous version to avoid conflicts
+["hj-entries","hj-headaches","hj-meds","hj-notes"].forEach(k=>localStorage.removeItem(k));
+
 let state={
   view:"log",
   date:todayStr(),
-  entries:  JSON.parse(localStorage.getItem("hj2-entries")  ||"{}"),
-  headaches:JSON.parse(localStorage.getItem("hj2-headaches")||"{}"),
-  medsLog:  JSON.parse(localStorage.getItem("hj2-meds")     ||"{}"),
-  // current in-progress entry being built
+  entries:  safeLoad("hj2-entries",  {}),
+  headaches:safeLoad("hj2-headaches",{}),
+  medsLog:  safeLoad("hj2-meds",     {}),
   draft:{time:nowTime(), symptoms:{}, note:""},
-  // current in-progress headache
   hdraft:{time:nowTime(),severity:0,locations:[],types:[],triggers:[],medication:"",relieved:""},
   summary:null,
   genning:false,
@@ -526,24 +540,33 @@ function renderSummary(){
 
 // ── MAIN RENDER ───────────────────────────────────────────────────────────
 function render(){
-  const pills=document.getElementById("header-pills");
-  if(state.date===todayStr()){
-    const dm=dayMeds();
-    pills.innerHTML=MEDS.filter(m=>!dm[m.id]).map(m=>`<span class="header-pill">${m.icon} Take your ${m.label}</span>`).join("");
-  }else pills.innerHTML="";
-
-  const views={log:renderLog,headache:renderHeadache,history:renderHistory,summary:renderSummary};
-  document.getElementById("main").innerHTML=views[state.view]?..()||"";
-
-  // Wire up draft severity buttons
-  SYMPTOMS.forEach(s=>{ window[`setDraftSev_${s.id}`]=lv=>{setDraftSev(s.id,lv);}; });
-  window.toggleHLoc    =v=>toggleHDraftChip("locations",v);
-  window.toggleHType   =v=>toggleHDraftChip("types",v);
-  window.toggleHTrigger=v=>toggleHDraftChip("triggers",v);
-
-  // Restore textareas
-  const ta=document.getElementById("sym-note");
-  if(ta)ta.value=state.draft.note;
+  try{
+    const pills=document.getElementById("header-pills");
+    if(pills){
+      if(state.date===todayStr()){
+        const dm=dayMeds();
+        pills.innerHTML=MEDS.filter(m=>!dm[m.id]).map(m=>`<span class="header-pill">${m.icon} Take your ${m.label}</span>`).join("");
+      }else pills.innerHTML="";
+    }
+    const views={log:renderLog,headache:renderHeadache,history:renderHistory,summary:renderSummary};
+    const main=document.getElementById("main");
+    if(main) main.innerHTML=views[state.view]?.()||"";
+    SYMPTOMS.forEach(s=>{ window[`setDraftSev_${s.id}`]=lv=>{setDraftSev(s.id,lv);}; });
+    window.toggleHLoc    =v=>toggleHDraftChip("locations",v);
+    window.toggleHType   =v=>toggleHDraftChip("types",v);
+    window.toggleHTrigger=v=>toggleHDraftChip("triggers",v);
+    const ta=document.getElementById("sym-note");
+    if(ta)ta.value=state.draft.note;
+  }catch(err){
+    console.error("Render error:",err);
+    const main=document.getElementById("main");
+    if(main)main.innerHTML=`<div style="padding:30px;text-align:center;color:#c62828;font-family:sans-serif">
+      <div style="font-size:32px;margin-bottom:12px">⚠️</div>
+      <div style="font-size:14px;margin-bottom:8px">Something went wrong. Tap below to reset.</div>
+      <div style="font-size:11px;color:#aaa;margin-bottom:20px">${err.message}</div>
+      <button onclick="localStorage.clear();location.reload()" style="padding:10px 20px;border-radius:10px;border:none;background:#7b3f7c;color:white;font-size:13px;cursor:pointer">Reset &amp; Reload</button>
+    </div>`;
+  }
 }
 
 function saveAndFlash(){
